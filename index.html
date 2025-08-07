@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Comentarii</title>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+</head>
+
+<body>
+  <h1 id="numeUser"></h1>
+
+<!-- Înlocuiește AICI cu client ID-ul din Google Cloud Console (OAuth 2.0 Client ID) -->
+<div id="g_id_onload"
+     data-client_id="677376092677-8dcfs8vhj6fml35a18ui1ngp8plihqsk.apps.googleusercontent.com"
+     data-callback="handleCredentialResponse"
+     data-auto_prompt="false"></div>
+
+<div id="googleSignIn" class="g_id_signin"
+     data-type="standard"
+     data-theme="outline"
+     data-text="signin_with"
+     data-shape="rectangular">
+</div>
+
+<div class="butoane">
+    <a href="admin.html">
+        <button id="butonSecret" style="display: none; margin-top: 20px;">
+            Rulează către pagina Admin
+        </button>
+    </a>
+
+    <button id="butonLogout" style="display: none; margin-top: 20px;">
+        Ieși din contul tău
+    </button>
+    <p class="parola-text">Loghează-te cu Google ca să accesezi pagina Admin.</p>
+</div>
+
+
+  <script src="script.js"></script>
+</body>
+
+</html>
