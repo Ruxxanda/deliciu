@@ -17,7 +17,7 @@
 ## 🌐 Acces site
 
 Site-ul este public și poate fi accesat aici:  
-➡️ **[https://ruxxanda.github.io/deliciu/](https://ruxxanda.github.io/deliciu/)**  
+➡️ **[https://ruxxanda.github.io/Deliciu/](https://ruxxanda.github.io/Deliciu/)**  
 
 
 ## 👩‍🍳 Despre autor
