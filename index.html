@@ -69,7 +69,7 @@
     }
 
     async function loadMessages() {
-      const res = await fetch("http://localhost:3000/messages", { credentials: "include" });
+      const res = await fetch("https://deliciu-7z41.onrender.com/messages", { credentials: "include" });
       const msgs = await res.json();
 
       if (!Array.isArray(msgs)) {
