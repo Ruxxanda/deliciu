@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="ro">
-
 <head>
   <meta charset="UTF-8">
   <title>Chat</title>
 </head>
-
 <body>
   <h1>Chat</h1>
   <div id="userInfo"></div>
@@ -18,16 +16,20 @@
     <ul id="myMessages"></ul>
   </div>
 
-  <!-- TOATE mesajele -->
   <h3>Toate mesajele</h3>
   <ul id="allMessages"></ul>
 
   <script>
+    // Detectăm URL-ul corect
+    const API_URL = window.location.hostname.includes("localhost")
+      ? "http://localhost:3000"
+      : "https://deliciu-7z41.onrender.com";
+
     let currentUserId = null;
 
     async function loadUser() {
       try {
-        const res = await fetch("http://localhost:3000/profile", { credentials: "include" });
+        const res = await fetch(`${API_URL}/profile`, { credentials: "include" });
         const user = await res.json();
 
         if (!user || !user.id) throw new Error("User invalid");
@@ -41,7 +43,7 @@
         document.getElementById("chatBox").style.display = "block";
       } catch {
         currentUserId = null;
-        document.getElementById("userInfo").innerHTML = `<a href="http://localhost:3000/auth/google">Login cu Google</a>`;
+        document.getElementById("userInfo").innerHTML = `<a href="${API_URL}/auth/google">Login cu Google</a>`;
         document.getElementById("chatBox").style.display = "none";
       }
 
@@ -49,7 +51,7 @@
     }
 
     async function logout() {
-      await fetch("http://localhost:3000/logout", { credentials: "include" });
+      await fetch(`${API_URL}/logout`, { credentials: "include" });
       loadUser();
     }
 
@@ -57,7 +59,7 @@
       const text = document.getElementById("msgInput").value;
       if (!text.trim()) return;
 
-      await fetch("http://localhost:3000/messages", {
+      await fetch(`${API_URL}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -69,7 +71,7 @@
     }
 
     async function loadMessages() {
-      const res = await fetch("https://deliciu-7z41.onrender.com/messages", { credentials: "include" });
+      const res = await fetch(`${API_URL}/messages`, { credentials: "include" });
       const msgs = await res.json();
 
       if (!Array.isArray(msgs)) {
@@ -83,17 +85,15 @@
       allList.innerHTML = "";
 
       msgs.forEach(msg => {
-        // toate mesajele (mic avatar 30px)
+        // toate mesajele
         const allLi = document.createElement("li");
         allLi.innerHTML = `
-  <img src="${msg.userPhoto || 'https://via.placeholder.com/30'}" 
-       width="30" style="border-radius:50%; vertical-align:middle">
-  <b>${msg.userName}</b>: ${msg.text}
-`;
-
+          <img src="${msg.userPhoto || 'https://via.placeholder.com/30'}" width="30" style="border-radius:50%; vertical-align:middle">
+          <b>${msg.userName}</b>: ${msg.text}
+        `;
         allList.appendChild(allLi);
 
-        // doar mesajele userului curent (avatar mai mare 40px + edit/delete)
+        // doar mesajele userului curent
         if (msg.userId === currentUserId) {
           const myLi = document.createElement("li");
           myLi.innerHTML = `
@@ -117,7 +117,7 @@
 
     function saveEdit(id) {
       const newText = document.getElementById(`edit-input-${id}`).value;
-      fetch(`http://localhost:3000/messages/${id}`, {
+      fetch(`${API_URL}/messages/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -126,7 +126,7 @@
     }
 
     async function deleteMessage(id) {
-      await fetch(`http://localhost:3000/messages/${id}`, {
+      await fetch(`${API_URL}/messages/${id}`, {
         method: "DELETE",
         credentials: "include"
       });
@@ -136,5 +136,4 @@
     loadUser();
   </script>
 </body>
-
 </html>
