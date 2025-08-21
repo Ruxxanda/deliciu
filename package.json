@@ -1,0 +1,21 @@
+{
+  "name": "deliciu",
+  "version": "1.0.0",
+  "description": "**Deliciu** este un site dedicat pasionaților de torturi. Aici poți: - Descoperi rețete de torturi delicioase - Personaliza și comanda propriul tort - Afla mai multe despre ingredientele folosite - Vizualiza colecții de torturi pentru diferite evenimente",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ruxxanda/deliciu.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ruxxanda/deliciu/issues"
+  },
+  "homepage": "https://github.com/Ruxxanda/deliciu#readme"
+}
