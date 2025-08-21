@@ -19,8 +19,9 @@ db.run(`CREATE TABLE IF NOT EXISTS mesaje (
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 )`);
 
+// CORS - permit atât GitHub, cât și localhost
 app.use(cors({
-  origin: "http://localhost:5500",
+  origin: ["https://ruxxanda.github.io", "http://localhost:5500"],
   credentials: true
 }));
 
@@ -34,46 +35,43 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(bodyParser.json());
 
-// 🔐 Autentificare Google
+// 🔐 Google Auth
 passport.use(new GoogleStrategy({
   clientID: "677376092677-8dcfs8vhj6fml35a18ui1ngp8plihqsk.apps.googleusercontent.com",
   clientSecret: "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",
-  callbackURL: "http://localhost:3000/auth/google/callback"
+  callbackURL: process.env.NODE_ENV === "production"
+    ? "https://deliciu-7z41.onrender.com/auth/google/callback"
+    : "http://localhost:3000/auth/google/callback"
 }, (accessToken, refreshToken, profile, done) => {
-  const user = {
-    id: profile.id,
-    name: profile.displayName,
-    photo: profile.photos[0].value
-  };
-  return done(null, user);
-
-
-  (profile, done) => {
-  console.log("PROFILE GOOGLE:", profile);
   const user = {
     id: profile.id,
     name: profile.displayName,
     photo: profile.photos?.[0]?.value || null
   };
   return done(null, user);
-}
-
 }));
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
 
-// 🔐 Rute login
+// 🔐 Login
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile"] }));
 app.get("/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => res.redirect("http://localhost:5500/index.html")
+  (req, res) => {
+    // redirect către site public sau localhost
+    res.redirect(process.env.NODE_ENV === "production"
+      ? "https://ruxxanda.github.io/index.html"
+      : "http://localhost:5500/index.html");
+  }
 );
 
 // 📄 Logout
 app.get("/logout", (req, res) => {
   req.logout(() => {
-    res.redirect("http://localhost:5500/index.html");
+    res.redirect(process.env.NODE_ENV === "production"
+      ? "https://ruxxanda.github.io/index.html"
+      : "http://localhost:5500/index.html");
   });
 });
 
@@ -103,8 +101,7 @@ app.get("/messages", (req, res) => {
   });
 });
 
-
-// 🧽 Șterge mesaj (doar dacă e al userului)
+// 🧽 Șterge mesaj
 app.delete("/messages/:id", (req, res) => {
   if (!req.isAuthenticated()) return res.status(401).json({ error: "Neautorizat" });
   const idMesaj = req.params.id;
@@ -115,7 +112,7 @@ app.delete("/messages/:id", (req, res) => {
   });
 });
 
-// ✏️ Editează mesaj (doar dacă e al userului)
+// ✏️ Editează mesaj
 app.put("/messages/:id", (req, res) => {
   if (!req.isAuthenticated()) return res.status(401).json({ error: "Neautorizat" });
   const idMesaj = req.params.id;
@@ -127,7 +124,7 @@ app.put("/messages/:id", (req, res) => {
   });
 });
 
-// Pornire server
-app.listen(3000, () => {
-  console.log("Server pornit pe http://localhost:3000");
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log("Server pornit pe port " + port);
 });
