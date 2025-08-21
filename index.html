@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Chat</title>
+</head>
+
+<body>
+  <h1>Chat</h1>
+  <div id="userInfo"></div>
+
+  <div id="chatBox" style="display:none;">
+    <input type="text" id="msgInput" placeholder="Scrie un mesaj">
+    <button onclick="sendMessage()">Trimite</button>
+
+    <h3>Mesajele tale</h3>
+    <ul id="myMessages"></ul>
+  </div>
+
+  <!-- TOATE mesajele -->
+  <h3>Toate mesajele</h3>
+  <ul id="allMessages"></ul>
+
+  <script>
+    let currentUserId = null;
+
+    async function loadUser() {
+      try {
+        const res = await fetch("http://localhost:3000/profile", { credentials: "include" });
+        const user = await res.json();
+
+        if (!user || !user.id) throw new Error("User invalid");
+
+        currentUserId = user.id;
+        document.getElementById("userInfo").innerHTML = `
+          <p>Logat ca: <b>${user.name}</b></p>
+          <img src="${user.photo || 'https://via.placeholder.com/50'}" width="50" style="border-radius:50%">
+          <button onclick="logout()">Ieșire</button>
+        `;
+        document.getElementById("chatBox").style.display = "block";
+      } catch {
+        currentUserId = null;
+        document.getElementById("userInfo").innerHTML = `<a href="http://localhost:3000/auth/google">Login cu Google</a>`;
+        document.getElementById("chatBox").style.display = "none";
+      }
+
+      loadMessages();
+    }
+
+    async function logout() {
+      await fetch("http://localhost:3000/logout", { credentials: "include" });
+      loadUser();
+    }
+
+    async function sendMessage() {
+      const text = document.getElementById("msgInput").value;
+      if (!text.trim()) return;
+
+      await fetch("http://localhost:3000/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text })
+      });
+
+      document.getElementById("msgInput").value = "";
+      loadMessages();
+    }
+
+    async function loadMessages() {
+      const res = await fetch("http://localhost:3000/messages", { credentials: "include" });
+      const msgs = await res.json();
+
+      if (!Array.isArray(msgs)) {
+        console.error("Eroare la încărcarea mesajelor:", msgs);
+        return;
+      }
+
+      const myList = document.getElementById("myMessages");
+      const allList = document.getElementById("allMessages");
+      myList.innerHTML = "";
+      allList.innerHTML = "";
+
+      msgs.forEach(msg => {
+        // toate mesajele (mic avatar 30px)
+        const allLi = document.createElement("li");
+        allLi.innerHTML = `
+  <img src="${msg.userPhoto || 'https://via.placeholder.com/30'}" 
+       width="30" style="border-radius:50%; vertical-align:middle">
+  <b>${msg.userName}</b>: ${msg.text}
+`;
+
+        allList.appendChild(allLi);
+
+        // doar mesajele userului curent (avatar mai mare 40px + edit/delete)
+        if (msg.userId === currentUserId) {
+          const myLi = document.createElement("li");
+          myLi.innerHTML = `
+            <img src="${msg.userPhoto || 'https://via.placeholder.com/40'}" width="40" style="border-radius:50%; vertical-align:middle; margin-right:5px">
+            <span id="msg-text-${msg.id}">${msg.text}</span>
+            <input type="text" id="edit-input-${msg.id}" value="${msg.text}" style="display:none;">
+            <button onclick="toggleEdit(${msg.id})">✏️</button>
+            <button onclick="deleteMessage(${msg.id})">🗑️</button>
+            <button id="save-btn-${msg.id}" style="display:none;" onclick="saveEdit(${msg.id})">💾</button>
+          `;
+          myList.appendChild(myLi);
+        }
+      });
+    }
+
+    function toggleEdit(id) {
+      document.getElementById(`msg-text-${id}`).style.display = "none";
+      document.getElementById(`edit-input-${id}`).style.display = "inline";
+      document.getElementById(`save-btn-${id}`).style.display = "inline";
+    }
+
+    function saveEdit(id) {
+      const newText = document.getElementById(`edit-input-${id}`).value;
+      fetch(`http://localhost:3000/messages/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text: newText })
+      }).then(loadMessages);
+    }
+
+    async function deleteMessage(id) {
+      await fetch(`http://localhost:3000/messages/${id}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      loadMessages();
+    }
+
+    loadUser();
+  </script>
+</body>
+
+</html>
