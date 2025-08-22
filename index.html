@@ -1,93 +1,139 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
-  <meta charset="UTF-8" />
-  <title>Mesaje</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Chat</title>
 </head>
 <body>
-  <div id="login">
-    <a href="/auth/google"><button>Login cu Google</button></a>
+  <h1>Chat</h1>
+  <div id="userInfo"></div>
+
+  <div id="chatBox" style="display:none;">
+    <input type="text" id="msgInput" placeholder="Scrie un mesaj">
+    <button onclick="sendMessage()">Trimite</button>
+
+    <h3>Mesajele tale</h3>
+    <ul id="myMessages"></ul>
   </div>
 
-  <div id="logout" style="display:none;">
-    <button onclick="logout()">Logout</button>
-  </div>
-
-  <h2>Toate mesajele</h2>
-  <div id="allMessages"></div>
-
-  <div id="userSection" style="display:none;">
-    <h2>Mesajele mele</h2>
-    <div id="myMessages"></div>
-
-    <h3>Adaugă mesaj</h3>
-    <form id="newMessageForm">
-      <input type="text" id="messageInput" placeholder="Scrie mesajul" required />
-      <button type="submit">Trimite</button>
-    </form>
-  </div>
+  <h3>Toate mesajele</h3>
+  <ul id="allMessages"></ul>
 
   <script>
-    async function checkUser() {
-      const res = await fetch("/auth/user");
-      const data = await res.json();
-      renderUI(data.user);
-    }
+    // Detectăm URL-ul corect
+    const API_URL = window.location.hostname.includes("localhost")
+      ? "http://localhost:3000"
+      : "https://deliciu-7z41.onrender.com";
 
-    function renderUI(user) {
-      if (!user) {
-        document.getElementById("login").style.display = "block";
-        document.getElementById("logout").style.display = "none";
-        document.getElementById("userSection").style.display = "none";
-      } else {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("logout").style.display = "block";
-        document.getElementById("userSection").style.display = "block";
-        loadMyMessages();
+    let currentUserId = null;
+
+    async function loadUser() {
+      try {
+        const res = await fetch(`${API_URL}/profile`, { credentials: "include" });
+        const user = await res.json();
+
+        if (!user || !user.id) throw new Error("User invalid");
+
+        currentUserId = user.id;
+        document.getElementById("userInfo").innerHTML = `
+          <p>Logat ca: <b>${user.name}</b></p>
+          <img src="${user.photo || 'https://via.placeholder.com/50'}" width="50" style="border-radius:50%">
+          <button onclick="logout()">Ieșire</button>
+        `;
+        document.getElementById("chatBox").style.display = "block";
+      } catch {
+        currentUserId = null;
+        document.getElementById("userInfo").innerHTML = `<a href="${API_URL}/auth/google">Login cu Google</a>`;
+        document.getElementById("chatBox").style.display = "none";
       }
-      loadAllMessages();
-    }
 
-    async function loadAllMessages() {
-      const res = await fetch("/messages");
-      const msgs = await res.json();
-      document.getElementById("allMessages").innerHTML =
-        msgs.map(m => `<p>${m.text}</p>`).join("");
+      loadMessages();
     }
-
-    async function loadMyMessages() {
-      const res = await fetch("/mymessages");
-      if (res.status === 401) {
-        document.getElementById("myMessages").innerHTML = "<i>Trebuie să fii logat.</i>";
-        return;
-      }
-      const msgs = await res.json();
-      document.getElementById("myMessages").innerHTML =
-        msgs.map(m => `<p>${m.text}</p>`).join("");
-    }
-
-    document.getElementById("newMessageForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const text = document.getElementById("messageInput").value;
-      const res = await fetch("/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "text=" + encodeURIComponent(text)
-      });
-      if (res.ok) {
-        document.getElementById("messageInput").value = "";
-        loadMyMessages();
-        loadAllMessages();
-      }
-    });
 
     async function logout() {
-      await fetch("/auth/logout");
-      checkUser();
+      await fetch(`${API_URL}/logout`, { credentials: "include" });
+      loadUser();
     }
 
-    checkUser();
+    async function sendMessage() {
+      const text = document.getElementById("msgInput").value;
+      if (!text.trim()) return;
+
+      await fetch(`${API_URL}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text })
+      });
+
+      document.getElementById("msgInput").value = "";
+      loadMessages();
+    }
+
+    async function loadMessages() {
+      const res = await fetch(`${API_URL}/messages`, { credentials: "include" });
+      const msgs = await res.json();
+
+      if (!Array.isArray(msgs)) {
+        console.error("Eroare la încărcarea mesajelor:", msgs);
+        return;
+      }
+
+      const myList = document.getElementById("myMessages");
+      const allList = document.getElementById("allMessages");
+      myList.innerHTML = "";
+      allList.innerHTML = "";
+
+      msgs.forEach(msg => {
+        // toate mesajele
+        const allLi = document.createElement("li");
+        allLi.innerHTML = `
+          <img src="${msg.userPhoto || 'https://via.placeholder.com/30'}" width="30" style="border-radius:50%; vertical-align:middle">
+          <b>${msg.userName}</b>: ${msg.text}
+        `;
+        allList.appendChild(allLi);
+
+        // doar mesajele userului curent
+        if (msg.userId === currentUserId) {
+          const myLi = document.createElement("li");
+          myLi.innerHTML = `
+            <img src="${msg.userPhoto || 'https://via.placeholder.com/40'}" width="40" style="border-radius:50%; vertical-align:middle; margin-right:5px">
+            <span id="msg-text-${msg.id}">${msg.text}</span>
+            <input type="text" id="edit-input-${msg.id}" value="${msg.text}" style="display:none;">
+            <button onclick="toggleEdit(${msg.id})">✏️</button>
+            <button onclick="deleteMessage(${msg.id})">🗑️</button>
+            <button id="save-btn-${msg.id}" style="display:none;" onclick="saveEdit(${msg.id})">💾</button>
+          `;
+          myList.appendChild(myLi);
+        }
+      });
+    }
+
+    function toggleEdit(id) {
+      document.getElementById(`msg-text-${id}`).style.display = "none";
+      document.getElementById(`edit-input-${id}`).style.display = "inline";
+      document.getElementById(`save-btn-${id}`).style.display = "inline";
+    }
+
+    function saveEdit(id) {
+      const newText = document.getElementById(`edit-input-${id}`).value;
+      fetch(`${API_URL}/messages/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text: newText })
+      }).then(loadMessages);
+    }
+
+    async function deleteMessage(id) {
+      await fetch(`${API_URL}/messages/${id}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      loadMessages();
+    }
+
+    loadUser();
   </script>
 </body>
 </html>
